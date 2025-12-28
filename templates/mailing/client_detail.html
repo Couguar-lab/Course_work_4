@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}{{ client.full_name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>{{ client.full_name }}</h1>
+    <p><strong>Email:</strong> {{ client.email }}</p>
+    <p><strong>Комментарий:</strong> {{ client.comment|default:"—"|linebreaks }}</p>
+
+    <div class="mt-4">
+        <a href="{% url 'mailing:client_update' client.pk %}" class="btn btn-primary">Редактировать</a>
+        <a href="{% url 'mailing:client_delete' client.pk %}" class="btn btn-danger">Удалить</a>
+        <a href="{% url 'mailing:client_list' %}" class="btn btn-secondary">Назад к списку</a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Рассылка: {{ object.message.subject }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Рассылка: {{ object.message.subject }}</h1>
+
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <strong>Параметры рассылки</strong>
+                </div>
+                <div class="card-body">
+                    <p><strong>Начало отправки:</strong> {{ object.start_time|date:"d.m.Y H:i" }}</p>
+                    <p><strong>Окончание:</strong> {{ object.end_time|date:"d.m.Y H:i" }}</p>
+                    <p><strong>Статус:</strong>
+                        <span class="badge bg-{% if object.status == 'launched' %}success{% elif object.status == 'completed' %}secondary{% else %}primary{% endif %}">
+                            {{ object.get_status_display }}
+                        </span>
+                    </p>
+                    <p><strong>Получатели:</strong> {{ object.clients.count }} чел.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <strong>Сообщение</strong>
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">{{ object.message.subject }}</h5>
+                    <pre style="white-space: pre-wrap; background:none; border:none; padding:0;">{{ object.message.body }}</pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Кнопка ручной отправки -->
+    <div class="mb-4">
+        <form method="post" action="{% url 'mailing:mailing_send_now' object.pk %}" class="d-inline">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-lg btn-warning"
+                    onclick="return confirm('Запустить отправку рассылки прямо сейчас?\nПисьма будут отправлены всем выбранным получателям.')">
+                <strong>Отправить сейчас</strong>
+            </button>
+        </form>
+    </div>
+
+    <!-- Попытки отправки -->
+    <h4 class="mt-5">Попытки отправки</h4>
+    {% if attempts %}
+        <div class="table-responsive">
+            <table class="table table-sm table-bordered align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Время</th>
+                        <th>Статус</th>
+                        <th>Ответ сервера</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for attempt in attempts %}
+                    <tr>
+                        <td>{{ attempt.timestamp|date:"d.m.Y H:i:s" }}</td>
+                        <td>
+                            <span class="badge bg-{% if attempt.status == 'success' %}success{% else %}danger{% endif %}">
+                                {{ attempt.get_status_display }}
+                            </span>
+                        </td>
+                        <td>{{ attempt.server_response|default:"—"|truncatechars:100 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="text-muted">Попыток отправки ещё не было.</p>
+    {% endif %}
+
+    <!-- Действия -->
+    <div class="mt-5">
+        <a href="{% url 'mailing:mailing_update' object.pk %}" class="btn btn-primary">Редактировать</a>
+        <a href="{% url 'mailing:mailing_delete' object.pk %}" class="btn btn-danger">Удалить</a>
+        <a href="{% url 'mailing:mailing_list' %}" class="btn btn-secondary">Назад к списку</a>
+    </div>
+</div>
+{% endblock %}

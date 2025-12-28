@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Все рассылки (менеджер){% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Все рассылки пользователей</h1>
+
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead class="table-dark">
+                <tr>
+                    <th>Владелец</th>
+                    <th>Сообщение</th>
+                    <th>Начало</th>
+                    <th>Статус</th>
+                    <th>Получатели</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for mailing in mailings %}
+                <tr>
+                    <td>{{ mailing.owner.username }}</td>
+                    <td>{{ mailing.message.subject }}</td>
+                    <td>{{ mailing.start_time|date:"d.m.Y H:i" }}</td>
+                    <td>
+                        <span class="badge bg-{% if mailing.status == 'launched' %}success{% elif mailing.status == 'completed' %}secondary{% else %}primary{% endif %}">
+                            {{ mailing.get_status_display }}
+                        </span>
+                    </td>
+                    <td>{{ mailing.clients.count }}</td>
+                    <td>
+                        {% if mailing.status != 'completed' %}
+                        <form method="post" action="{% url 'mailing:manager_mailing_disable' mailing.pk %}" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-warning" onclick="return confirm('Отключить эту рассылку?')">
+                                Отключить
+                            </button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
