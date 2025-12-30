@@ -210,3 +210,6 @@ LOGIN_REDIRECT_URL = "/"  # на главную страницу
 
 # Редирект после логаута
 LOGOUT_REDIRECT_URL = "/accounts/login/"
+
+# Авторизация
+AUTH_USER_MODEL = "users.CustomUser"

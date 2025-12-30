@@ -4,21 +4,15 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import User
+from django.core.exceptions import PermissionDenied
 from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_control, cache_page
-from django.views.generic import (
-    CreateView,
-    DeleteView,
-    DetailView,
-    ListView,
-    TemplateView,
-    UpdateView,
-    View,
-)
+from django.views.generic import (CreateView, DeleteView, DetailView, ListView,
+                                  TemplateView, UpdateView, View)
 
 from .forms import ClientForm, MailingForm, MessageForm
 from .models import Attempt, Client, Mailing, Message
@@ -27,6 +21,7 @@ from .permissions import ManagerRequiredMixin
 logger = logging.getLogger("mailing")
 
 
+# Главная страница
 @method_decorator(cache_page(300), name="dispatch")
 @method_decorator(cache_control(max_age=300, private=True), name="dispatch")
 class HomeView(TemplateView):
@@ -51,12 +46,8 @@ class HomeView(TemplateView):
         return context
 
 
+# Функция отправки
 def send_mailing_now(mailing):
-    """
-    Отправляет сообщения по рассылке прямо сейчас.
-    Создаёт записи Attempt для каждой попытки.
-    Обновляет статус рассылки.
-    """
     logger.info(
         f"Запуск отправки рассылки ID={mailing.id} «{mailing.message.subject}» владельца {mailing.owner}"
     )
@@ -65,12 +56,10 @@ def send_mailing_now(mailing):
         logger.warning(f"Попытка отправить завершённую рассылку ID={mailing.id}")
         return
 
-    # Обновляем статус на 'Запущена', если ещё не запущена
     if mailing.status == "created":
         mailing.status = "launched"
         mailing.save(update_fields=["status"])
 
-    # Проверяем, не прошло ли время окончания
     if timezone.now() > mailing.end_time:
         mailing.status = "completed"
         mailing.save(update_fields=["status"])
@@ -119,12 +108,23 @@ class ClientListView(LoginRequiredMixin, ListView):
     paginate_by = 10
 
     def get_queryset(self):
+        if self.request.user.groups.filter(name="Менеджеры").exists():
+            return Client.objects.all()
         return Client.objects.filter(owner=self.request.user)
 
 
 class ClientDetailView(LoginRequiredMixin, DetailView):
     model = Client
     template_name = "mailing/client_detail.html"
+
+    def get_object(self, queryset=None):
+        obj = super().get_object(queryset)
+        if (
+            not self.request.user.groups.filter(name="Менеджеры").exists()
+            and obj.owner != self.request.user
+        ):
+            raise PermissionDenied
+        return obj
 
 
 class ClientCreateView(LoginRequiredMixin, CreateView):
@@ -144,11 +144,29 @@ class ClientUpdateView(LoginRequiredMixin, UpdateView):
     template_name = "mailing/client_form.html"
     success_url = reverse_lazy("mailing:client_list")
 
+    def get_object(self, queryset=None):
+        obj = super().get_object(queryset)
+        if (
+            not self.request.user.groups.filter(name="Менеджеры").exists()
+            and obj.owner != self.request.user
+        ):
+            raise PermissionDenied
+        return obj
+
 
 class ClientDeleteView(LoginRequiredMixin, DeleteView):
     model = Client
     template_name = "mailing/client_confirm_delete.html"
     success_url = reverse_lazy("mailing:client_list")
+
+    def get_object(self, queryset=None):
+        obj = super().get_object(queryset)
+        if (
+            not self.request.user.groups.filter(name="Менеджеры").exists()
+            and obj.owner != self.request.user
+        ):
+            raise PermissionDenied
+        return obj
 
 
 # === СООБЩЕНИЯ ===
@@ -160,12 +178,23 @@ class MessageListView(LoginRequiredMixin, ListView):
     paginate_by = 10
 
     def get_queryset(self):
+        if self.request.user.groups.filter(name="Менеджеры").exists():
+            return Message.objects.all()
         return Message.objects.filter(owner=self.request.user)
 
 
 class MessageDetailView(LoginRequiredMixin, DetailView):
     model = Message
     template_name = "mailing/message_detail.html"
+
+    def get_object(self, queryset=None):
+        obj = super().get_object(queryset)
+        if (
+            not self.request.user.groups.filter(name="Менеджеры").exists()
+            and obj.owner != self.request.user
+        ):
+            raise PermissionDenied
+        return obj
 
 
 class MessageCreateView(LoginRequiredMixin, CreateView):
@@ -185,11 +214,29 @@ class MessageUpdateView(LoginRequiredMixin, UpdateView):
     template_name = "mailing/message_form.html"
     success_url = reverse_lazy("mailing:message_list")
 
+    def get_object(self, queryset=None):
+        obj = super().get_object(queryset)
+        if (
+            not self.request.user.groups.filter(name="Менеджеры").exists()
+            and obj.owner != self.request.user
+        ):
+            raise PermissionDenied
+        return obj
+
 
 class MessageDeleteView(LoginRequiredMixin, DeleteView):
     model = Message
     template_name = "mailing/message_confirm_delete.html"
     success_url = reverse_lazy("mailing:message_list")
+
+    def get_object(self, queryset=None):
+        obj = super().get_object(queryset)
+        if (
+            not self.request.user.groups.filter(name="Менеджеры").exists()
+            and obj.owner != self.request.user
+        ):
+            raise PermissionDenied
+        return obj
 
 
 # === РАССЫЛКИ ===
@@ -201,6 +248,8 @@ class MailingListView(LoginRequiredMixin, ListView):
     paginate_by = 10
 
     def get_queryset(self):
+        if self.request.user.groups.filter(name="Менеджеры").exists():
+            return Mailing.objects.all()
         return Mailing.objects.filter(owner=self.request.user)
 
 
@@ -213,6 +262,15 @@ class MailingDetailView(LoginRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         context["attempts"] = self.object.attempts.all()
         return context
+
+    def get_object(self, queryset=None):
+        obj = super().get_object(queryset)
+        if (
+            not self.request.user.groups.filter(name="Менеджеры").exists()
+            and obj.owner != self.request.user
+        ):
+            raise PermissionDenied
+        return obj
 
 
 class MailingCreateView(LoginRequiredMixin, CreateView):
@@ -232,11 +290,29 @@ class MailingUpdateView(LoginRequiredMixin, UpdateView):
     template_name = "mailing/mailing_form.html"
     success_url = reverse_lazy("mailing:mailing_list")
 
+    def get_object(self, queryset=None):
+        obj = super().get_object(queryset)
+        if (
+            not self.request.user.groups.filter(name="Менеджеры").exists()
+            and obj.owner != self.request.user
+        ):
+            raise PermissionDenied
+        return obj
+
 
 class MailingDeleteView(LoginRequiredMixin, DeleteView):
     model = Mailing
     template_name = "mailing/mailing_confirm_delete.html"
     success_url = reverse_lazy("mailing:mailing_list")
+
+    def get_object(self, queryset=None):
+        obj = super().get_object(queryset)
+        if (
+            not self.request.user.groups.filter(name="Менеджеры").exists()
+            and obj.owner != self.request.user
+        ):
+            raise PermissionDenied
+        return obj
 
 
 class MailingSendNowView(LoginRequiredMixin, View):
@@ -263,7 +339,7 @@ class MailingSendNowView(LoginRequiredMixin, View):
         return redirect("mailing:mailing_detail", pk=pk)
 
 
-# Список всех пользователей (только для менеджеров)
+# Менеджерские вьюхи
 class UserListView(ManagerRequiredMixin, ListView):
     model = User
     template_name = "mailing/manager/user_list.html"
@@ -274,7 +350,6 @@ class UserListView(ManagerRequiredMixin, ListView):
         return User.objects.all().order_by("username")
 
 
-# Блокировка/разблокировка пользователя
 class UserToggleActiveView(ManagerRequiredMixin, View):
     def post(self, request, pk):
         user = get_object_or_404(User, pk=pk)
@@ -288,7 +363,6 @@ class UserToggleActiveView(ManagerRequiredMixin, View):
         return redirect("mailing:manager_user_list")
 
 
-# Просмотр всех рассылок (для менеджеров)
 @method_decorator(cache_page(60), name="dispatch")
 class AllMailingListView(ManagerRequiredMixin, ListView):
     model = Mailing
@@ -300,7 +374,6 @@ class AllMailingListView(ManagerRequiredMixin, ListView):
         return Mailing.objects.select_related("message", "owner").all()
 
 
-# Отключение рассылки
 class MailingDisableView(ManagerRequiredMixin, View):
     def post(self, request, pk):
         mailing = get_object_or_404(Mailing, pk=pk)

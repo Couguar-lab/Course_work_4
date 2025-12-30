@@ -37,9 +37,8 @@ def check_and_schedule_mailings():
         logger.warning("Планировщик не запущен")
         return
 
-    from mailing.models import (
-        Mailing,
-    )  # импорт внутри, чтобы избежать циклического импорта
+    from mailing.models import \
+        Mailing  # импорт внутри, чтобы избежать циклического импорта
 
     now = timezone.now()
     mailings = Mailing.objects.filter(status="created", start_time__lte=now)

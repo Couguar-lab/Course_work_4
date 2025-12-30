@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Список сообщений{% endblock %}
+{% block title %}Сообщения{% endblock %}
 
 {% block content %}
 <div class="container mt-4">
@@ -12,7 +12,7 @@
             <thead class="table-dark">
                 <tr>
                     <th>Тема</th>
-                    <th>Предпросмотр тела</th>
+                    <th>Предпросмотр</th>
                     <th>Действия</th>
                 </tr>
             </thead>
@@ -22,8 +22,12 @@
                     <td><a href="{% url 'mailing:message_detail' message.pk %}">{{ message.subject }}</a></td>
                     <td>{{ message.body|truncatechars:100 }}</td>
                     <td>
-                        <a href="{% url 'mailing:message_update' message.pk %}" class="btn btn-sm btn-primary">Изменить</a>
-                        <a href="{% url 'mailing:message_delete' message.pk %}" class="btn btn-sm btn-danger">Удалить</a>
+                        {% if user.groups.filter(name='Менеджеры').exists or message.owner == user %}
+                            <a href="{% url 'mailing:message_update' message.pk %}" class="btn btn-sm btn-primary">Изменить</a>
+                            <a href="{% url 'mailing:message_delete' message.pk %}" class="btn btn-sm btn-danger">Удалить</a>
+                        {% else %}
+                            <span class="text-muted">Нет доступа</span>
+                        {% endif %}
                     </td>
                 </tr>
                 {% endfor %}
@@ -34,7 +38,7 @@
     {% include "pagination.html" %}
 
     {% else %}
-    <p class="text-muted">Пока нет ни одного сообщения.</p>
+    <p class="text-muted">Пока нет сообщений.</p>
     {% endif %}
 </div>
 {% endblock %}

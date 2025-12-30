@@ -1,6 +1,6 @@
 import uuid
 
-from django.contrib.auth.models import User
+from django.conf import settings
 from django.db import models
 
 
@@ -9,7 +9,11 @@ class Client(models.Model):
     full_name = models.CharField(max_length=300, verbose_name="Ф.И.О.")
     comment = models.TextField(blank=True, null=True, verbose_name="Комментарий")
     owner = models.ForeignKey(
-        User, on_delete=models.CASCADE, verbose_name="Владелец", null=True, blank=True
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        verbose_name="Владелец",
+        null=True,
+        blank=True,
     )
 
     def __str__(self):
@@ -26,7 +30,11 @@ class Message(models.Model):
     subject = models.CharField(max_length=255, verbose_name="Тема письма")
     body = models.TextField(verbose_name="Тело письма")
     owner = models.ForeignKey(
-        User, on_delete=models.CASCADE, verbose_name="Владелец", null=True, blank=True
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        verbose_name="Владелец",
+        null=True,
+        blank=True,
     )
 
     def __str__(self):
@@ -51,16 +59,20 @@ class Mailing(models.Model):
         max_length=20, choices=STATUS_CHOICES, default="created", verbose_name="Статус"
     )
     message = models.ForeignKey(
-        Message,
+        "Message",
         on_delete=models.CASCADE,
         related_name="mailings",
         verbose_name="Сообщение",
     )
     clients = models.ManyToManyField(
-        Client, related_name="mailings", verbose_name="Получатели"
+        "Client", related_name="mailings", verbose_name="Получатели"
     )
     owner = models.ForeignKey(
-        User, on_delete=models.CASCADE, verbose_name="Владелец", null=True, blank=True
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        verbose_name="Владелец",
+        null=True,
+        blank=True,
     )
 
     def __str__(self):
@@ -89,7 +101,7 @@ class Attempt(models.Model):
         blank=True, null=True, verbose_name="Ответ почтового сервера"
     )
     mailing = models.ForeignKey(
-        Mailing,
+        "Mailing",
         on_delete=models.CASCADE,
         related_name="attempts",
         verbose_name="Рассылка",
@@ -109,13 +121,15 @@ class Attempt(models.Model):
 
 class ActivationToken(models.Model):
     user = models.OneToOneField(
-        User, on_delete=models.CASCADE, related_name="activation_token"
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="activation_token",
     )
     token = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Токен активации для {self.user.username}"
+        return f"Токен активации для {self.user.email}"
 
     class Meta:
         app_label = "mailing"

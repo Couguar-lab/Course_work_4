@@ -1,9 +1,9 @@
 {% extends "base.html" %}
-{% block title %}Список рассылок{% endblock %}
+{% block title %}Рассылки{% endblock %}
 
 {% block content %}
 <div class="container mt-4">
-    <h1 class="mb-4">Рассылки</h1>
+    <h1 class="mb-4">Мои рассылки</h1>
     <a href="{% url 'mailing:mailing_create' %}" class="btn btn-success mb-3">Создать рассылку</a>
 
     {% if mailings %}
@@ -32,8 +32,12 @@
                     </td>
                     <td>{{ mailing.clients.count }}</td>
                     <td>
-                        <a href="{% url 'mailing:mailing_update' mailing.pk %}" class="btn btn-sm btn-primary">Изменить</a>
-                        <a href="{% url 'mailing:mailing_delete' mailing.pk %}" class="btn btn-sm btn-danger">Удалить</a>
+                        {% if user.groups.filter(name='Менеджеры').exists or mailing.owner == user %}
+                            <a href="{% url 'mailing:mailing_update' mailing.pk %}" class="btn btn-sm btn-primary">Изменить</a>
+                            <a href="{% url 'mailing:mailing_delete' mailing.pk %}" class="btn btn-sm btn-danger">Удалить</a>
+                        {% else %}
+                            <span class="text-muted">Нет доступа</span>
+                        {% endif %}
                     </td>
                 </tr>
                 {% endfor %}
@@ -44,7 +48,7 @@
     {% include "pagination.html" %}
 
     {% else %}
-    <p class="text-muted">Пока нет ни одной рассылки.</p>
+    <p class="text-muted">Пока нет рассылок.</p>
     {% endif %}
 </div>
 {% endblock %}
