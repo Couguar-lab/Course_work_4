@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Рассылки{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Мои рассылки</h1>
+    <a href="{% url 'mailing:mailing_create' %}" class="btn btn-success mb-3">Создать рассылку</a>
+
+    {% if mailings %}
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>Сообщение</th>
+                    <th>Начало</th>
+                    <th>Окончание</th>
+                    <th>Статус</th>
+                    <th>Получатели</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for mailing in mailings %}
+                <tr>
+                    <td><a href="{% url 'mailing:mailing_detail' mailing.pk %}">{{ mailing.message.subject }}</a></td>
+                    <td>{{ mailing.start_time|date:"d.m.Y H:i" }}</td>
+                    <td>{{ mailing.end_time|date:"d.m.Y H:i" }}</td>
+                    <td>
+                        <span class="badge bg-{% if mailing.status == 'launched' %}success{% elif mailing.status == 'completed' %}secondary{% else %}primary{% endif %}">
+                            {{ mailing.get_status_display }}
+                        </span>
+                    </td>
+                    <td>{{ mailing.clients.count }}</td>
+                    <td>
+                        {% if user.groups.filter(name='Менеджеры').exists or mailing.owner == user %}
+                            <a href="{% url 'mailing:mailing_update' mailing.pk %}" class="btn btn-sm btn-primary">Изменить</a>
+                            <a href="{% url 'mailing:mailing_delete' mailing.pk %}" class="btn btn-sm btn-danger">Удалить</a>
+                        {% else %}
+                            <span class="text-muted">Нет доступа</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% include "pagination.html" %}
+
+    {% else %}
+    <p class="text-muted">Пока нет рассылок.</p>
+    {% endif %}
+</div>
+{% endblock %}

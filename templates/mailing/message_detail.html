@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}{{ object.subject }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>{{ object.subject }}</h1>
+    <div class="card mt-4">
+        <div class="card-body">
+            <pre style="white-space: pre-wrap; font-family: inherit;">{{ object.body }}</pre>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <a href="{% url 'mailing:message_update' object.pk %}" class="btn btn-primary">Редактировать</a>
+        <a href="{% url 'mailing:message_delete' object.pk %}" class="btn btn-danger">Удалить</a>
+        <a href="{% url 'mailing:message_list' %}" class="btn btn-secondary">Назад к списку</a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}{% if form.instance.pk %}Редактирование{% else %}Создание{% endif %} рассылки{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>{% if form.instance.pk %}Редактирование{% else %}Создание новой{% endif %} рассылки</h1>
+
+    <form method="post" class="mt-4">
+        {% csrf_token %}
+        <div class="row">
+            <div class="col-md-8">
+                {{ form.as_p }}
+            </div>
+        </div>
+        <button type="submit" class="btn btn-success mt-3">Сохранить</button>
+        <a href="{% url 'mailing:mailing_list' %}" class="btn btn-secondary mt-3">Отмена</a>
+    </form>
+</div>
+{% endblock %}
